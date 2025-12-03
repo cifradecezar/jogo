@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreeWay - Jogo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e6e6e6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 900px;
+        }
+        
+        h1 {
+            color: #ffcc00;
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #a0a0c0;
+            margin-bottom: 25px;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 25px;
+            width: 100%;
+            max-width: 1200px;
+        }
+        
+        .canvas-wrapper {
+            background-color: #0f0f1a;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            border: 2px solid #333355;
+        }
+        
+        #gameCanvas {
+            border-radius: 6px;
+            display: block;
+        }
+        
+        .info-panel {
+            background-color: #0f0f1a;
+            border-radius: 12px;
+            padding: 25px;
+            width: 350px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            border: 2px solid #333355;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .panel-title {
+            color: #ff9900;
+            font-size: 1.6rem;
+            border-bottom: 2px solid #333355;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .status-section, .controls-section, .instructions-section {
+            background-color: #151525;
+            padding: 18px;
+            border-radius: 8px;
+            border-left: 4px solid #4444aa;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+        }
+        
+        .status-label {
+            color: #a0a0ff;
+        }
+        
+        .status-value {
+            font-weight: bold;
+            color: #ffffff;
+        }
+        
+        .controls-list {
+            list-style-type: none;
+            padding-left: 10px;
+        }
+        
+        .controls-list li {
+            margin-bottom: 12px;
+            padding-left: 25px;
+            position: relative;
+            font-size: 1rem;
+        }
+        
+        .controls-list li:before {
+            content: "🎮";
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+        
+        .instructions {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #c0c0e0;
+        }
+        
+        .highlight {
+            color: #ffcc00;
+            font-weight: bold;
+        }
+        
+        .danger {
+            color: #ff6666;
+        }
+        
+        .success {
+            color: #66ff66;
+        }
+        
+        .warning {
+            color: #ffaa44;
+        }
+        
+        .phase-indicator {
+            display: inline-block;
+            background-color: #333377;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+        
+        .freeway-phase {
+            background-color: #aa4400;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #777799;
+            font-size: 0.9rem;
+            width: 100%;
+            max-width: 900px;
+        }
+        
+        .key {
+            display: inline-block;
+            background-color: #222244;
+            padding: 3px 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            border: 1px solid #444488;
+            margin: 0 2px;
+        }
+        
+        @media (max-width: 1000px) {
+            .game-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .info-panel {
+                width: 100%;
+                max-width: 800px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🐮 FreeWay 🐮</h1>
+        <p class="subtitle">Ajude a vaca a escapar dos fazendeiros e atravessar a rodovia!</p>
+    </div>
+    
+    <div class="game-container">
+        <div class="canvas-wrapper">
+            <div id="sketch-holder">
+                <!-- O canvas será criado aqui pelo p5.js -->
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <h2 class="panel-title">📊 STATUS DO JOGO</h2>
+            
+            <div class="status-section">
+                <div class="status-item">
+                    <span class="status-label">Fase Atual:</span>
+                    <span id="phaseDisplay" class="status-value phase-indicator">1</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Vida da Vaca:</span>
+                    <span id="healthDisplay" class="status-value success">15/15</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Ouro Coletado:</span>
+                    <span id="goldDisplay" class="status-value highlight">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Inimigos Restantes:</span>
+                    <span id="enemiesDisplay" class="status-value danger">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Status:</span>
+                    <span id="statusDisplay" class="status-value">Explorando</span>
+                </div>
+            </div>
+            
+            <div class="controls-section">
+                <h3 class="panel-title">🎮 CONTROLES</h3>
+                <ul class="controls-list">
+                    <li>Mover a vaca: <span class="key">W</span> <span class="key">A</span> <span class="key">S</span> <span class="key">D</span></li>
+                    <li>Atacar inimigo próximo: <span class="key">Q</span></li>
+                    <li>Abrir/fechar loja: Clique no botão <span class="highlight">🏪 Loja</span></li>
+                    <li>Comprar poção de cura (na loja): <span class="key">1</span></li>
+                    <li>Comprar poção de velocidade (na loja): <span class="key">2</span></li>
+                    <li>Ir para fase Freeway: <span class="key">0</span></li>
+                </ul>
+            </div>
+            
+            <div class="instructions-section">
+                <h3 class="panel-title">📋 INSTRUÇÕES</h3>
+                <p class="instructions">
+                    Você controla uma <span class="highlight">vaca 🐮</span> tentando escapar. 
+                    Derrote todos os <span class="danger">fazendeiros 👨‍🌾</span> em cada fase para avançar.
+                    Colete <span class="highlight">ouro 💰</span> para comprar poções na loja.
+                    Na <span class="warning">fase 5</span>, você precisará atravessar uma rodovia cheia de carros 🚗.
+                    Use <span class="key">WASD</span> para mover e <span class="key">Q</span> para atacar inimigos próximos.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>Jogo desenvolvido com p5.js | Pressione F5 para reiniciar o jogo</p>
+    </div>
+
+    <script>
+        // O código completo do jogo será inserido aqui
+        // CONFIGURAÇÕES GERAIS DO JOGO
+        let tamanhoGrid = 20;       // Tamanho da grade do grid
+        let tamanhoTile = 24;       // Tamanho de cada tile em pixels
+        let jogador;                // Objeto do jogador
+        let inimigos = [];          // Array para armazenar os inimigos
+        let itens = [];             // Array para armazenar os itens coletáveis
+        let mapa = [];              // Matriz para o mapa do jogo
+        let larguraFase = 25;       // Largura do nível em tiles
+        let alturaFase = 25;        // Altura do nível em tiles
+        let faseAtual = 1;          // Nível atual do jogador
+        let ouro = 0;               // Quantidade de ouro do jogador
+        let jogoAcabou = false;     // Controle de fim de jogo
+        let custo = 8;
+        
+        // VARIÁVEIS PARA TELA DE FIM DE JOGO
+        let mostrarTelaFim = false; // Controla se mostra a tela de fim
+        let tempoFimJogo = 0;       // Tempo decorrido na tela de fim
+        let estrelasFimJogo = [];   // Partículas para efeito visual
+        let estatisticasFimJogo = { // Estatísticas para mostrar no fim
+            fasesCompletadas: 0,
+            inimigosDerrotados: 0,
+            ouroTotal: 0,
+            tempoTotal: 0,
+            derrotaFreeway: false   // Nova flag para identificar derrota no Freeway
+        };
+
+        // VARIÁVEIS PARA POÇÃO DE VELOCIDADE
+        let pocoVelocidadeAtiva = false;    // Controle se a poção está ativa
+        let movimentosVelocidade = 0;       // Movimentos restantes da poção
+
+        // VARIÁVEIS PARA A LOJA
+        let lojaAberta = false;             // Controle se a loja está aberta
+
+        // VARIÁVEIS PARA O SISTEMA DE BATALHA
+        let emBatalha = false;              // Controle se está em batalha
+        let inimigoAtual = null;            // Inimigo atual da batalha
+        let logBatalha = [];                // Log de mensagens da batalha
+        let vezJogador = true;              // Controle de turno do jogador
+        let opcoesBatalha = ["Chifrada : 4 de dano", "coice: 6 de dano", "Investida: 8 de dano", "Terremoto: 10 de dano"]; // Opções de batalha
+        let opcaoSelecionada = 0;           // Opção selecionada no menu
+
+        // VARIÁVEIS PARA FASE FREEWAY (FASE 5)
+        let freewayAtivo = false;           // Controle se está na fase Freeway
+        let carrosFreeway = [];             // Array para os carros do Freeway
+        let atorFreeway;                    // Jogador na fase Freeway
+        let chegadasFreeway = [];           // Posições de chegada
+        let tempoFreeway = 0;               // Tempo decorrido no Freeway
+        let vidasFreeway = 3;               // Vidas no Freeway
+        let pontosFreeway = 0;              // Pontuação no Freeway
+
+        // ATAQUES DO JOGADOR
+        let ataquesJogador = [
+          { nome: "chifrada: 4 de dano", dano: 4, custo: 0, descricao: "" },
+          { nome: "coice: 6 de dano", dano: 6, custo: 2, descricao: "" },
+          { nome: "Investida: 8 de dano", dano: 8, custo: 6, descricao: "" },
+          { nome: "Terremoto: 10 de dano", dano: 10, custo: 8, descricao: "" }
+        ];
+
+        // ATAQUES DOS INIMIGOS
+        let ataquesInimigos = [
+          { nome: "Bodocada", dano: 5, descricao: "" },
+          { nome: "Espetada", dano: 3, descricao: "" },
+          { nome: "Laçada", dano: 1, descricao: "" },
+          { nome: "Calibre 12", dano: 2, descricao: "" }
+        ];
+
+        // OFFSET PARA CENTRALIZAR O MAPA NO CANVAS
+        let offsetX, offsetY;
+
+        // CLASSE ENTIDADE - BASE PARA JOGADOR
+        class Entidade {
+          constructor(x, y, char, cor, nome) {
+            this.x = x;             // Posição X no mapa
+            this.y = y;             // Posição Y no mapa
+            this.char = char;       // Caractere para representação textual
+            this.cor = cor;         // Cor para representação visual
+            this.nome = nome;       // Nome da entidade
+            this.vida = 15;         // Vida atual
+            this.vidaMax = 15;      // Vida máxima
+            this.ataque = 4;        // Poder de ataque
+            this.defesa = 2;        // Poder de defesa
+            this.ataqueAtual = 3;   // Índice do ataque atual
+          }
+          
+          // MOVE A ENTIDADE NO MAPA
+          mover(dx, dy) {
+            let novoX = this.x + dx;
+            let novoY = this.y + dy;
+            
+            // Verifica colisão com paredes e bordas do mapa
+            if (novoX >= 0 && novoX < larguraFase && 
+                novoY >= 0 && novoY < alturaFase && 
+                mapa[novoY][novoX] === 0) {
+              this.x = novoX;
+              this.y = novoY;
+              return true;
+            }
+            return false;
+          }
+          
+          // DESENHA OS QUADRADOS DO VACA E DOS INIMIGOS NA TELA
+          desenhar() {
+            // Adicionar borda ao redor da entidade
+            stroke(0);
+            strokeWeight(2);
+            fill(this.cor);
+            rect(this.x * tamanhoTile + offsetX, this.y * tamanhoTile + offsetY, tamanhoTile, tamanhoTile);
+            
+            // Preencher o interior (um pouco menor para a borda ficar visível)
+            fill(this.cor);
+            rect(this.x * tamanhoTile + offsetX + 1, this.y * tamanhoTile + offsetY + 1, tamanhoTile - 2, tamanhoTile - 2);
+            
+            fill(255);
+            textSize(16);
+            textAlign(CENTER, CENTER);
+            text(this.char, this.x * tamanhoTile + offsetX + tamanhoTile/2, this.y * tamanhoTile + offsetY + tamanhoTile/2);
+            textAlign(LEFT, BASELINE);
+            noStroke(); // Remover stroke para outros elementos
+          }
+          
+          // EXECUTA UM ATAQUE ALEATÓRIO DO INIMIGO
+          ataqueAleatorio() {
+            let indiceAtaque;
+            do {
+              indiceAtaque = floor(random(ataquesInimigos.length));
+            } while (indiceAtaque === this.ataqueAtual && ataquesInimigos.length > 1);
+            
+            this.ataqueAtual = indiceAtaque;
+            let ataque = ataquesInimigos[indiceAtaque];
+            
+            return {
+              nome: ataque.nome,
+              dano: ataque.dano,
+              descricao: ataque.descricao
+            };
+          }
+        }
+
+        // CLASSE ITEM - ITENS COLETÁVEIS NO MAPA
+        class Item {
+          constructor(x, y, tipo) {
+            this.x = x;             // Posição X no mapa
+            this.y = y;             // Posição Y no mapa
+            this.tipo = tipo;       // Tipo de item
+            this.coletado = false;  // Se foi coletado
+          }
+          
+          // DESENHA O ITEM NA TELA
+          desenhar() {
+            if (!this.coletado) {
+              // Adicionar borda dourada
+              stroke(255, 215, 0, 150);
+              strokeWeight(2);
+              fill(255, 215, 0); // Dourado
+              rect(this.x * tamanhoTile + offsetX, this.y * tamanhoTile + offsetY, tamanhoTile, tamanhoTile);
+              
+              // Preencher o interior
+              fill(255, 215, 0);
+              rect(this.x * tamanhoTile + offsetX + 1, this.y * tamanhoTile + offsetY + 1, tamanhoTile - 2, tamanhoTile - 2);
+              
+              fill(0);
+              textSize(16);
+              textAlign(CENTER, CENTER);
+              text("💰", this.x * tamanhoTile + offsetX + tamanhoTile/2, this.y * tamanhoTile + offsetY + tamanhoTile/2);
+              textAlign(LEFT, BASELINE);
+              noStroke();
+            }
+          }
+        }
+
+        // CLASSE PARTÍCULA PARA EFEITOS VISUAIS
+        class Particula {
+          constructor(x, y) {
+            this.x = x;
+            this.y = y;
+            this.vx = random(-2, 2);
+            this.vy = random(-2, 2);
+            this.tamanho = random(2, 6);
+            this.vida = 255;
+            this.cor = color(random(200, 255), random(150, 255), random(50, 150));
+          }
+          
+          atualizar() {
+            this.x += this.vx;
+            this.y += this.vy;
+            this.vida -= 3;
+          }
+          
+          desenhar() {
+            noStroke();
+            fill(red(this.cor), green(this.cor), blue(this.cor), this.vida);
+            ellipse(this.x, this.y, this.tamanho);
+          }
+          
+          estaViva() {
+            return this.vida > 0;
+          }
+        }
+
+        // CARRO FREEWAY
+        class CarroFreeway {
+          constructor(x, y, velocidade, tipo) {
+            this.x = x;             // Posição X
+            this.y = y;             // Posição Y (linha fixa)
+            this.velocidade = velocidade; // Velocidade do carro
+            this.tipo = tipo;       // Tipo do carro
+            this.largura = 60;      // Largura do carro
+            this.altura = 40;       // Altura do carro
+          }
+          
+          // ATUALIZA POSIÇÃO DO CARRO
+          atualizar() {
+            this.x += this.velocidade;
+            
+            // Se sair da tela, reinicia do outro lado
+            if (this.velocidade > 0 && this.x > width) {
+              this.x = -this.largura;
+            } else if (this.velocidade < 0 && this.x < -this.largura) {
+              this.x = width;
+            }
+          }
+          
+          // DESENHA O CARRO
+          desenhar() {
+            fill(200, 50, 50);
+            rect(this.x, this.y, this.largura, this.altura);
+            fill(255);
+            textAlign(CENTER, CENTER);
+            text("🚗", this.x + this.largura/2, this.y + this.altura/2);
+            textAlign(LEFT, BASELINE);
+          }
+          
+          // VERIFICA COLISÃO COM O ATOR
+          colidiuCom(ator) {
+            return (
+              ator.x < this.x + this.largura &&
+              ator.x + ator.largura > this.x &&
+              ator.y < this.y + this.altura &&
+              ator.y + ator.altura > this.y
+            );
+          }
+        }
+
+        // CLASSE ATOR FREEWAY ------------ MUDAR VELOCIDADE FREEWAY ----------
+        //-------------------------------------------------------------------------------
+        class AtorFreeway {
+          constructor() {
+            this.x = width / 2 - 25; // Posição X inicial (centro)
+            this.y = height - 60;    // Posição Y inicial (parte inferior)
+            this.largura = 40;       // Largura do ator
+            this.altura = 40;        // Altura do ator
+            this.velocidade = 25;    // Velocidade de movimento (aumentada)
+          }
+          
+          // MOVE O ATOR
+          mover(dx, dy) {
+            this.x += dx * this.velocidade;
+            this.y += dy * this.velocidade;
+            
+            // Limita movimento dentro da tela
+            this.x = constrain(this.x, 0, width - this.largura);
+            this.y = constrain(this.y, 0, height - this.altura);
+          }
+          
+          // DESENHA O ATOR
+          desenhar() {
+            fill(100, 200, 100);
+            rect(this.x, this.y, this.largura, this.altura);
+            fill(255);
+            textAlign(CENTER, CENTER);
+            text("🐮", this.x + this.largura/2, this.y + this.altura/2);
+            textAlign(LEFT, BASELINE);
+          }
+          
+          // VERIFICA SE CHEGOU AO TOPO
+          chegouNoTopo() {
+            return this.y <= 50; // Considera que chegou quando atinge o topo
+          }
+          
+          // RESETA POSIÇÃO PARA INÍCIO
+          resetar() {
+            this.x = width / 2 - 25;
+            this.y = height - 60;
+          }
+        }
+
+        // FUNÇÕES DO JOGO PRINCIPAL
+
+        // GERA O MAPA ALEATÓRIO
+        function gerarMapa() {
+        rect (0)
+          mapa = [];
+          for (let y = 0; y < alturaFase; y++) {
+            mapa[y] = [];
+            for (let x = 0; x < larguraFase; x++) {
+              if (x === 0 || y === 0 || x === larguraFase - 1 || y === alturaFase - 1) {
+                mapa[y][x] = 1; // Borda é parede 
+              } else {
+                mapa[y][x] = random() < 0.2 ? 1 : 0; // 20% de chance de ser parede interna
+              }
+            }
+          }
+
+          // Garantir que o jogador possa se mover na área inicial
+          mapa[1][1] = 0;
+          mapa[1][2] = 0;
+          mapa[2][1] = 0;
+          mapa[2][2] = 0;
+        }
+
+        // CRIA INIMIGOS NO MAPA
+        function gerarInimigos() {
+          inimigos = [];
+          let numInimigos = floor(random(3, 8));
+          
+          let nomesInimigos = ["Fazendeiro 1", "Fazendeiro 2", "Fazendeiro 3", "Fazendeiro 4", "Fazendeiro 5"];
+          let charsInimigos = ["👨🏻‍🌾", "👨🏼‍🌾", "👨🏽‍🌾", "👨🏾‍🌾", "👨🏿‍🌾"]; 
+          
+          for (let i = 0; i < numInimigos; i++) {
+            let pos = encontrarTileVazio();
+            let tipoInimigo = floor(random(nomesInimigos.length));
+            
+            let inimigo = new Entidade(
+              pos.x, 
+              pos.y, 
+              charsInimigos[tipoInimigo], 
+              color(200, 50, 50), 
+              nomesInimigos[tipoInimigo]
+            );
+            
+            // Status diferentes para cada tipo de inimigo
+            
+            //FLOOR GARANTE QUE O NUMERO SERA INTEIRO
+            
+            inimigo.vida = floor(random(8, 20));
+            inimigo.vidaMax = inimigo.vida;
+            inimigo.ataque = floor(random(2, 8));
+            inimigo.defesa = floor(random(1, 7));
+            
+            inimigos.push(inimigo);
+          }
+        }
+
+        // CRIA ITENS NO MAPA
+        function gerarItens() {
+          itens = [];
+          let numItens = floor(random(3, 8));
+          
+          for (let i = 0; i < numItens; i++) {
+            let pos = encontrarTileVazio();
+            itens.push(new Item(pos.x, pos.y, "ouro"));
+          }
+        }
+
+        // ENCONTRA UMA POSIÇÃO VAZIA NO MAPA
+        function encontrarTileVazio() {
+          let x, y;
+          let tentativas = 0;
+          const maxTentativas = 100;
+          
+          do {
+            x = floor(random(1, larguraFase - 1));
+            y = floor(random(1, alturaFase - 1));
+            tentativas++;
+            
+            if (tentativas > maxTentativas) {
+              return { x: 1, y: 1 }; // Posição de fallback
+            }
+            
+          } while (mapa[y][x] === 1 || 
+                   (x === jogador.x && y === jogador.y) ||
+                   inimigos.some(inimigo => inimigo.x === x && inimigo.y === y) ||
+                   itens.some(item => item.x === x && item.y === y));
+                   
+          return { x, y };
+          
+          /*Essa função tem como objetivo encontrar uma posição livre no mapa para posicionar algo — como um inimigo, item sem que essa posição esteja ocupada por uma parede, pelo jogador, por outro inimigo ou por um item já existente vERIFICANDO CADA PASSO SEU.*/
+          
+        }
+
+        // INICIALIZA A FASE FREEWAY
+        function inicializarFreeway() {
+          freewayAtivo = false;
+          carrosFreeway = [];
+          atorFreeway = new AtorFreeway();
+          chegadasFreeway = [];
+          tempoFreeway = 0;
+          vidasFreeway = 3;
+          pontosFreeway = 0;
+          
+          // Criar carros em 6 linhas diferentes
+          let linhas = [80, 160, 240, 320, 400, 480]; // 6 linhas agora
+          let velocidades = [-4, -5, -6, 4, 5, 6]; // Velocidades variadas
+          
+          // Criar 2-3 carros por linha
+          for (let linha of linhas) {
+            let numCarrosNaLinha = floor(random(2, 4));
+            for (let i = 0; i < numCarrosNaLinha; i++) {
+              let velocidade = random(velocidades);
+              let x = random(width);
+              let tipo = floor(random(3));
+              carrosFreeway.push(new CarroFreeway(x, linha, velocidade, tipo));
+            }
+          }
+          
+          // Criar área de chegada
+          for (let i = 0; i < 5; i++) {
+            chegadasFreeway.push({
+              x: i * 160,
+              y: 0,
+              largura: 160,
+              altura: 50,
+              ocupada: false
+            });
+          }
+        }
+
+        // INICIALIZAÇÃO DO JOGO
+        function setup() {
+          let canvas = createCanvas(800, 600);
+          canvas.parent('sketch-holder');
+          
+          // centralizar o mapa no canvas
+          offsetX = (width - (larguraFase * tamanhoTile)) / 2;
+          offsetY = (height - (alturaFase * tamanhoTile)) / 2 - 30;
+          
+          // Gerar mapa inicial
+          gerarMapa();
+          
+          // Criar vaca 
+          jogador = new Entidade(1, 1, "🐮", color(100, 200, 100), "Vaca ");
+          
+          // Criar inimigos (carros)
+          gerarInimigos();
+          
+          // Criar itens
+          gerarItens();
+          
+          // Inicializar fase Freeway
+          inicializarFreeway();
+          
+          // Inicializar tela de fim
+          estrelasFimJogo = [];
+          mostrarTelaFim = false;
+          
+          // Atualizar interface inicial
+          atualizarInterface();
+        }
+
+        // LOOP PRINCIPAL DE RENDERIZAÇÃO
+        function draw() {
+          // Se estiver mostrando tela de fim
+          if (mostrarTelaFim) {
+            desenharTelaFim();
+            return;
+          }
+          
+          // Atualizar interface a cada frame
+          atualizarInterface();
+          
+          // Se estiver na fase 5 (Freeway)
+          if (faseAtual >= 5 && freewayAtivo) {
+            desenharFreeway();
+            atualizarFreeway();
+            return;
+          }
+          
+          // Se estiver em batalha desenha tela de batalha
+          if (emBatalha) {
+            desenharBatalha();
+            return;
+          }
+          
+          // Checar fim de jogo
+          if (jogoAcabou) {
+            iniciarTelaFim(false); // Derrota normal
+            return;
+          }
+          
+          // Desenhar mapa
+          desenharMapa();
+          
+          // Desenhar itens
+          itens.forEach(item => item.desenhar());
+          
+          // Desenhar inimigos
+          inimigos.forEach(inimigo => inimigo.desenhar());
+          
+          // Desenhar jogador
+          jogador.desenhar();
+          
+          // Destacar inimigos próximos quando houver
+          destacarInimigosProximos();
+          
+          // Desenhar interface do usuário
+          desenharUI();
+          
+          // Botão da loja (sempre visível)
+          desenharBotaoLoja();
+          
+          // Loja (apenas se estiver aberta)
+          if (lojaAberta) {
+            desenharLoja();
+          }
+          
+          // Checar transição de fase
+          if (inimigos.length === 0) {
+            proximaFase();
+          }
+        }
+
+        // INICIAR TELA DE FIM DE JOGO
+        function iniciarTelaFim(derrotaFreeway = false) {
+          // Calcular estatísticas
+          estatisticasFimJogo = {
+            fasesCompletadas: faseAtual - 1,
+            inimigosDerrotados: calcularInimigosDerrotados(),
+            ouroTotal: ouro,
+            tempoTotal: Math.floor(millis() / 1000),
+            derrotaFreeway: derrotaFreeway // Marcar se foi derrota no Freeway
+          };
+          
+          // Criar partículas de efeito
+          for (let i = 0; i < 100; i++) {
+            estrelasFimJogo.push(new Particula(random(width), random(height)));
+          }
+          
+          mostrarTelaFim = true;
+          tempoFimJogo = millis();
+          atualizarInterface();
+        }
+
+        // CALCULAR INIMIGOS DERROTADOS
+        function calcularInimigosDerrotados() {
+          let total = 0;
+          // Cada fase tem entre 3-8 inimigos, faseAtual-1 fases completadas
+          for (let i = 1; i < faseAtual; i++) {
+            total += floor(random(3, 8));
+          }
+          return total;
+        }
+
+        // DESENHAR TELA DE FIM DE JOGO
+        function desenharTelaFim() {
+          // Verificar se foi derrota no Freeway
+          if (estatisticasFimJogo.derrotaFreeway) {
+            desenharTelaDerrotaFreeway();
+          } else {
+            desenharTelaFimNormal();
+          }
+        }
+
+        // DESENHAR TELA DE DERROTA NO FREEWAY
+        function desenharTelaDerrotaFreeway() {
+          // Fundo animado com tema de estrada
+          background(20, 20, 40);
+          
+          // Efeito de faixas da estrada
+          stroke(255, 255, 0, 100);
+          strokeWeight(2);
+          for (let y = 0; y < height; y += 40) {
+            for (let x = 0; x < width; x += 60) {
+              line(x, y, x + 30, y);
+            }
+          }
+          
+          // Efeito de carros passando
+          for (let i = 0; i < 20; i++) {
+            let x = (millis() / 10 + i * 100) % (width + 100) - 50;
+            fill(255, 50, 50, 150);
+            noStroke();
+            rect(x, 100 + i * 25, 80, 30);
+            fill(255);
+            textAlign(CENTER, CENTER);
+            text("🚗", x + 40, 115 + i * 25);
+          }
+          
+          // Gradiente escuro no centro
+          for (let i = 0; i < height; i++) {
+            let alpha = map(i, 0, height, 50, 150);
+            stroke(0, 0, 0, alpha);
+            line(0, i, width, i);
+          }
+          
+          // Título principal
+          fill(255, 0, 0);
+          textSize(48);
+          textAlign(CENTER, CENTER);
+          text("🚗 ATROPELAMENTO! 🚗", width/2, 80);
+          
+          // Ícone da vaca atropelada
+          textSize(80);
+          text("💀🐮💥", width/2, 150);
+          
+          // Mensagem específica para Freeway
+          fill(255, 150, 150);
+          textSize(24);
+          text("A vaca não conseguiu atravessar a rodovia!", width/2, 220);
+          
+          // Painel de estatísticas
+          fill(30, 30, 60, 200);
+          stroke(200, 50, 50);
+          strokeWeight(3);
+          rect(width/2 - 250, 270, 500, 200, 15);
+          noStroke();
+          
+          // Título do painel
+          fill(255, 100, 100);
+          textSize(28);
+          text("📊 ESTATÍSTICAS DO FREEWAY", width/2, 310);
+          
+          // Estatísticas específicas do Freeway
+          fill(255);
+          textSize(20);
+          textAlign(LEFT);
+          
+          let startY = 350;
+          let lineHeight = 35;
+          
+          text(`🏁 Tentativas de travessia: ${pontosFreeway}/5`, width/2 - 200, startY);
+          text(`❤️ Vidas restantes: ${vidasFreeway}`, width/2 - 200, startY + lineHeight);
+          text(`⏱️ Tempo na rodovia: ${Math.floor(tempoFreeway)} segundos`, width/2 - 200, startY + lineHeight * 2);
+          text(`🎯 Fase alcançada: 5 (Freeway)`, width/2 - 200, startY + lineHeight * 3);
+          
+          textAlign(CENTER);
+          
+          // Mensagem motivacional
+          fill(255, 200, 100);
+          textSize(18);
+          text("A estrada é perigosa! Tente novamente com mais cuidado.", width/2, 480);
+          
+          // Botão de reiniciar
+          desenharBotaoReiniciar(520);
+        }
+
+        // DESENHAR TELA DE FIM NORMAL
+        function desenharTelaFimNormal() {
+          // Fundo animado
+          background(10, 10, 30);
+          
+          // Efeito de estrelas/partículas
+          for (let i = estrelasFimJogo.length - 1; i >= 0; i--) {
+            estrelasFimJogo[i].atualizar();
+            estrelasFimJogo[i].desenhar();
+            
+            if (!estrelasFimJogo[i].estaViva()) {
+              estrelasFimJogo.splice(i, 1);
+            }
+          }
+          
+          // Adicionar novas partículas ocasionalmente
+          if (frameCount % 5 === 0) {
+            estrelasFimJogo.push(new Particula(random(width), random(height)));
+          }
+          
+          // Gradiente escuro no centro
+          for (let i = 0; i < height; i++) {
+            let alpha = map(i, 0, height, 100, 200);
+            stroke(0, 0, 0, alpha);
+            line(0, i, width, i);
+          }
+          
+          // Título principal
+          fill(255, 50, 50);
+          textSize(48);
+          textAlign(CENTER, CENTER);
+          text("💀 FIM DE JOGO 💀", width/2, 80);
+          
+          // Ícone da vaca triste
+          textSize(80);
+          text("😢🐮😢", width/2, 150);
+          
+          // Mensagem
+          fill(255, 150, 150);
+          textSize(24);
+          text("A vaca foi capturada pelos fazendeiros!", width/2, 220);
+          
+          // Painel de estatísticas
+          fill(30, 30, 60, 200);
+          stroke(100, 100, 200);
+          strokeWeight(3);
+          rect(width/2 - 250, 270, 500, 200, 15);
+          noStroke();
+          
+          // Título do painel
+          fill(255, 200, 100);
+          textSize(28);
+          text("📊 SUAS ESTATÍSTICAS", width/2, 310);
+          
+          // Estatísticas
+          fill(255);
+          textSize(20);
+          textAlign(LEFT);
+          
+          let startY = 350;
+          let lineHeight = 35;
+          
+          text(`🏆 Fases Completadas: ${estatisticasFimJogo.fasesCompletadas}`, width/2 - 200, startY);
+          text(`👨‍🌾 Inimigos Derrotados: ${estatisticasFimJogo.inimigosDerrotados}`, width/2 - 200, startY + lineHeight);
+          text(`💰 Ouro Coletado: ${estatisticasFimJogo.ouroTotal}`, width/2 - 200, startY + lineHeight * 2);
+          text(`⏱️ Tempo de Jogo: ${estatisticasFimJogo.tempoTotal} segundos`, width/2 - 200, startY + lineHeight * 3);
+          
+          textAlign(CENTER);
+          
+          // Botão de reiniciar
+          desenharBotaoReiniciar(500);
+          
+          // Instruções
+          fill(200, 200, 255);
+          textSize(16);
+          text("Clique no botão acima ou pressione ESPAÇO para reiniciar", width/2, 570);
+        }
+
+        // DESENHAR BOTÃO DE REINICIAR
+        function desenharBotaoReiniciar(yPos) {
+          let botaoX = width/2;
+          let botaoY = yPos;
+          let botaoLargura = 200;
+          let botaoAltura = 50;
+          
+          // Efeito hover no botão
+          let sobreBotao = mouseX > botaoX - botaoLargura/2 && 
+                          mouseX < botaoX + botaoLargura/2 && 
+                          mouseY > botaoY - botaoAltura/2 && 
+                          mouseY < botaoY + botaoAltura/2;
+          
+          if (sobreBotao) {
+            fill(100, 200, 100, 200);
+            stroke(150, 255, 150);
+          } else {
+            fill(50, 150, 50, 180);
+            stroke(100, 200, 100);
+          }
+          
+          strokeWeight(2);
+          rect(botaoX - botaoLargura/2, botaoY - botaoAltura/2, botaoLargura, botaoAltura, 10);
+          
+          fill(255);
+          textSize(22);
+          noStroke();
+          text("🔄 JOGAR NOVAMENTE", botaoX, botaoY);
+          
+          textAlign(LEFT);
+        }
+
+        // ATUALIZAR INFORMAÇÕES NA INTERFACE
+        function atualizarInterface() {
+          document.getElementById('phaseDisplay').textContent = faseAtual;
+          document.getElementById('healthDisplay').textContent = `${jogador ? jogador.vida : 0}/${jogador ? jogador.vidaMax : 15}`;
+          document.getElementById('goldDisplay').textContent = ouro;
+          document.getElementById('enemiesDisplay').textContent = inimigos.length;
+          
+          // Atualizar status
+          let statusElement = document.getElementById('statusDisplay');
+          if (mostrarTelaFim) {
+            statusElement.textContent = "Fim de Jogo";
+            statusElement.className = "status-value danger";
+          } else if (freewayAtivo) {
+            statusElement.textContent = "Freeway (Fase 5)";
+            statusElement.className = "status-value warning";
+          } else if (emBatalha) {
+            statusElement.textContent = "Em Batalha!";
+            statusElement.className = "status-value danger";
+          } else if (jogoAcabou) {
+            statusElement.textContent = "Fim de Jogo";
+            statusElement.className = "status-value danger";
+          } else if (lojaAberta) {
+            statusElement.textContent = "Loja Aberta";
+            statusElement.className = "status-value highlight";
+          } else {
+            statusElement.textContent = "Explorando";
+            statusElement.className = "status-value success";
+          }
+          
+          // Atualizar classe da fase
+          let phaseElement = document.getElementById('phaseDisplay');
+          if (faseAtual >= 5) {
+            phaseElement.classList.add('freeway-phase');
+          } else {
+            phaseElement.classList.remove('freeway-phase');
+          }
+        }
+
+        // DESENHA A FASE FREEWAY
+        function desenharFreeway() {
+          // Fundo da estrada
+          background(50, 50, 70);
+          
+          // Desenhar faixas da estrada
+          stroke(255, 255, 0);
+          strokeWeight(3);
+          for (let y = 80; y < height; y += 80) {
+            for (let x = 0; x < width; x += 40) {
+              line(x, y, x + 20, y);
+            }
+          }
+          noStroke();
+          
+          // Desenhar área de chegada no topo
+          fill(0, 150, 0, 100);
+          rect(0, 0, width, 50);
+          fill(255);
+          textSize(20);
+          textAlign(CENTER);
+          text("🏁 CHEGADA 🏁", width/2, 25);
+          
+          // Desenhar carros
+          carrosFreeway.forEach(carro => carro.desenhar());
+          
+          // Desenhar ator
+          atorFreeway.desenhar();
+          
+          // Desenhar UI do Freeway
+          desenharUIFreeway();
+        }
+
+        // ATUALIZA A FASE FREEWAY
+        function atualizarFreeway() {
+          // Atualizar tempo
+          tempoFreeway += deltaTime / 1000;
+          
+          // Atualizar carros
+          carrosFreeway.forEach(carro => {
+            carro.atualizar();
+            
+            // Verificar colisão com ator
+            if (carro.colidiuCom(atorFreeway)) {
+              vidasFreeway--;
+              atorFreeway.resetar();
+              
+              if (vidasFreeway <= 0) {
+                freewayAtivo = false;
+                iniciarTelaFim(true); // Derrota específica do Freeway
+                return;
+              }
+            }
+          });
+          
+          // Verificar se chegou ao topo
+          if (atorFreeway.chegouNoTopo()) {
+            pontosFreeway++;
+            atorFreeway.resetar();
+            
+            // Ganha o Freeway após 5 pontos
+            if (pontosFreeway >= 5) {
+              freewayAtivo = false;
+              faseAtual = 6; // Avança para próxima fase
+              reiniciarJogoPrincipal();
+            }
+          }
+        }
+
+        // DESENHA DESCRICOES DO FREEWAY
+        function desenharUIFreeway() {
+          fill(0, 0, 0, 180);
+          rect(10, 10, 200, 80);
+          
+          fill(255);
+          textSize(16);
+          textAlign(LEFT);
+          text(`🎯 Fase: FREEWAY`, 20, 30);
+          text(`❤️ Vidas: ${vidasFreeway}`, 20, 50);
+          text(`⭐ Pontos: ${pontosFreeway}/5`, 20, 70);
+          
+          // Instruções
+          textSize(14);
+          text(`🎮 Use WASD para mover`, width - 200, 30);
+          text(`🎯 Chegue ao topo 5 vezes`, width - 200, 50);
+          text(`⚠️ Evite os carros! (6 faixas)`, width - 200, 70);
+        }
+
+        // REINICIA O JOGO PRINCIPAL APÓS FREEWAY
+        function reiniciarJogoPrincipal() {
+          gerarMapa();
+          jogador = new Entidade(1, 1, "🐮", color(100, 200, 100), "Vaca ");
+          gerarInimigos();
+          gerarItens();
+          emBatalha = false;
+          jogoAcabou = false;
+          atualizarInterface();
+        }
+
+        // DESENHA TELA DE GAME OVER (antiga - mantida para compatibilidade)
+        function desenharFimJogo() {
+          // Esta função agora redireciona para a nova tela
+          iniciarTelaFim(false);
+        }
+
+        // DESTACA INIMIGOS PRÓXIMOS
+        function destacarInimigosProximos() {
+          let inimigosProximos = getInimigosProximos();
+          //VERIFICA INIMIGOS PROXIMOS
+          if (inimigosProximos.length > 0) {
+            inimigosProximos.forEach(inimigo => {
+              stroke(255, 255, 0);
+              strokeWeight(3);
+              noFill();
+              rect(inimigo.x * tamanhoTile + offsetX, inimigo.y * tamanhoTile + offsetY, tamanhoTile, tamanhoTile);
+              noStroke();
+            });
+            
+            fill(255, 255, 0);
+            textSize(14);
+            textAlign(CENTER);
+            text("🎯 Inimigo próximo! Pressione Q para atacar 🎯", width/2, 30);
+            textAlign(LEFT);
+          }
+        }
+
+        // RETORNA INIMIGOS A ATÉ 2 TILES DE DISTÂNCIA
+        function getInimigosProximos() {
+          let proximos = [];
+          for (let inimigo of inimigos) {
+            let distancia = abs(inimigo.x - jogador.x) + abs(inimigo.y - jogador.y);
+            if (distancia <= 2 && distancia > 0) {
+              proximos.push(inimigo);
+            }
+          }
+          return proximos;
+        }
+
+        // DESENHA A TELA DE BATALHA
+        function desenharBatalha() {
+          fill(20, 20, 40);
+          rect(0, 0, width, height);
+          
+          // Desenhar inimigo (carro)
+          fill(200, 50, 50);
+          ellipse(width/2, 150, 120, 120);
+          fill(255);
+          textSize(32);
+          textAlign(CENTER);
+          text(inimigoAtual.char, width/2, 150);
+          
+          // Status do inimigo
+          fill(255);
+          textSize(18);
+          text(`${inimigoAtual.nome}`, width/2, 80);
+          text(`❤️ ${inimigoAtual.vida}/${inimigoAtual.vidaMax}`, width/2, 220);
+          
+          textSize(14);
+          text(`⚔️ Ataques: ${ataquesInimigos.map(a => a.nome).join(", ")}`, width/2, 240);
+          text(`🎯 Dano: ${ataquesInimigos.map(a => a.dano).join("-")}`, width/2, 260);
+          
+          textAlign(LEFT);
+          
+          // Desenhar jogador (vaca)
+          fill(50, 150, 50);
+          ellipse(150, 350, 120, 120);
+          fill(255);
+          textSize(32);
+          textAlign(CENTER);
+          text(jogador.char, 150, 350);
+          
+          // Status do jogador
+          fill(255);
+          textSize(18);
+          text(`${jogador.nome}`, 80, 280);
+          text(`❤️ ${jogador.vida}/${jogador.vidaMax}`, 80, 420);
+          text(`💰 ${ouro}`, 80, 440);
+          
+          // Opções de batalha
+          desenharOpcoesBatalha();
+          
+          // Log da batalha
+          desenharLogBatalha();
+        }
+
+        // DESENHA AS OPÇÕES DE BATALHA
+        function desenharOpcoesBatalha() {
+          fill(50, 50, 80, 220);
+          rect(300, 320, 400, 180, 10);
+          
+          fill(255);
+          textSize(20);
+          textAlign(CENTER);
+          text("🎮 ESCOLHA SUA AÇÃO:", width/2, 350);
+          textAlign(LEFT);
+          
+          for (let i = 0; i < opcoesBatalha.length; i++) {
+            if (i === opcaoSelecionada) {
+              fill(100, 100, 200);
+            } else {
+              fill(80, 80, 120);
+            }
+            
+            rect(320, 370 + i * 35, 360, 30, 5);
+            
+            fill(255);
+            textSize(16);
+            text(opcoesBatalha[i], 340, 392 + i * 35);
+            
+            if (i > 0 && i < 4) {
+              fill(200);
+              textSize(12);
+              text(ataquesJogador[i-1].descricao, 450, 392 + i * 35);
+            }
+          }
+        }
+
+        // DESENHA O LOG DA BATALHA
+        function desenharLogBatalha() {
+          // Mostrar últimas 4 mensagens
+          for (let i = 0; i < min(4, logBatalha.length); i++) {
+            let index = logBatalha.length - 1 - i;
+            if (index >= 0) {
+              text(logBatalha[index], 70, height - 105 + i * 25);
+            }
+          }
+        }
+
+        // DESENHA O MAPA NA TELA
+        function desenharMapa() {
+          // Calcular as posições das bordas do mapa
+          let mapaEsquerda = offsetX;
+          let mapaDireita = offsetX + (larguraFase * tamanhoTile);
+          let mapaTopo = offsetY;
+          let mapaBase = offsetY + (alturaFase * tamanhoTile);
+          
+          // Desenhar fundo escuro atrás do mapa inteiro
+          fill(30, 30, 50);
+          noStroke();
+          rect(mapaEsquerda, mapaTopo, larguraFase * tamanhoTile, alturaFase * tamanhoTile);
+          
+          for (let y = 0; y < alturaFase; y++) {
+            for (let x = 0; x < larguraFase; x++) {
+              let tileX = x * tamanhoTile + offsetX;
+              let tileY = y * tamanhoTile + offsetY;
+              
+              if (mapa[y][x] === 1) {
+                // Parede com borda
+                stroke(40, 40, 60);
+                strokeWeight(2);
+                fill(80, 80, 100);
+                rect(tileX, tileY, tamanhoTile, tamanhoTile);
+                
+                // Detalhes da parede (mantenha os pontos originais)
+                noStroke();
+                fill(70, 70, 90);
+                for (let i = 0; i < 3; i++) {
+                  for (let j = 0; j < 3; j++) {
+                    rect(tileX + i * 8, tileY + j * 8, 2, 2);
+                  }
+                }
+              } else {
+                // Chão com borda sutil
+                stroke(40, 40, 50);
+                strokeWeight(1);
+                fill(60, 60, 80);
+                rect(tileX, tileY, tamanhoTile, tamanhoTile);
+                
+                // Detalhes do chão
+                noStroke();
+                fill(50, 50, 70);
+                for (let i = 0; i < 2; i++) {
+                  for (let j = 0; j < 2; j++) {
+                    ellipse(tileX + i * 12 + 6, tileY + j * 12 + 6, 2, 2);
+                  }
+                }
+              }
+            }
+          }
+          
+          // DESENHAR DOIS QUADRADOS NAS LATERAIS PARA TAMPAR
+          // Quadrado na lateral ESQUERDA
+          fill(30, 30, 50); // Cor igual ao fundo do mapa
+          noStroke();
+          rect(0, 0, offsetX, height);
+          
+          // Quadrado na lateral DIREITA  
+          rect(mapaDireita, 0, width - mapaDireita, height);
+          
+          // Quadrado na parte SUPERIOR (acima do mapa)
+          rect(0, 0, width, offsetY);
+          
+          // Quadrado na parte INFERIOR (abaixo do mapa, mas acima da UI)
+          rect(0, mapaBase, width, height - mapaBase - 50);
+          
+          noStroke(); // Garantir que não tenha stroke ativo para outros desenhos
+          
+          // Adicionar uma borda decorativa ao redor do mapa
+          stroke(100, 100, 150);
+          strokeWeight(3);
+          noFill();
+          rect(offsetX - 2, offsetY - 2, larguraFase * tamanhoTile + 4, alturaFase * tamanhoTile + 4);
+          noStroke();
+        }
+
+        // DESENHA A INTERFACE DO USUÁRIO (HUD)
+        function desenharUI() {
+          let uiY = height - 50;
+          
+          fill(0, 0, 0, 180);
+          rect(0, uiY - 15, width, 65);
+          
+          fill(255);
+          textSize(16);
+          
+          text(`❤️ ${jogador.vida}/${jogador.vidaMax}`, 20, uiY);
+          text(`⚔️ ${jogador.ataque}`, 150, uiY);
+          text(`💰 ${ouro}`, 280, uiY);
+          text(`🏆 Fase: ${faseAtual}`, 400, uiY);
+          text(`🎯 Inimigos: ${inimigos.length}`, 550, uiY);
+          
+          if (pocoVelocidadeAtiva) {
+            text(`⚡ Velocidade: ${movimentosVelocidade} movimentos`, 20, uiY + 25);
+          }
+          
+          textSize(12);
+          text("🎮 Use WASD para mover", 280, uiY + 25);
+          text("🏪 Clique no botão para abrir a loja", 500, uiY + 25);
+          text("🎯 Pressione Q para atacar inimigos próximos", 20, uiY + 25);
+        }
+
+        // DESENHA O BOTÃO DA LOJA
+        function desenharBotaoLoja() {
+          let botaoX = 10;
+          let botaoY = 10;
+          let botaoLargura = 60;
+          let botaoAltura = 35;
+          
+          if (mouseX > botaoX && mouseX < botaoX + botaoLargura &&
+              mouseY > botaoY && mouseY < botaoY + botaoAltura) {
+            fill(100, 100, 200);
+          } else {
+            fill(50, 50, 100);
+          }
+          
+          stroke(100, 100, 200);
+          rect(botaoX, botaoY, botaoLargura, botaoAltura, 8);
+          noStroke();
+          
+          fill(255);
+          textSize(14);
+          textAlign(CENTER, CENTER);
+          text("🏪 Loja", botaoX + botaoLargura/2, botaoY + botaoAltura/2);
+          textAlign(LEFT, BASELINE);
+        }
+
+        // DESENHA A LOJA QUANDO ABERTA
+        function desenharLoja() {
+          let lojaX = width/2 - 200;
+          let lojaY = height/2 - 150;
+          let lojaLargura = 400;
+          let lojaAltura = 300;
+          
+          fill(50, 50, 100, 240);
+          stroke(100, 100, 200);
+          rect(lojaX, lojaY, lojaLargura, lojaAltura, 15);
+          noStroke();
+          
+          fill(255);
+          textSize(24);
+          textAlign(CENTER);
+          text("🏪 LOJINHA DE POÇÕES 🏪", lojaX + lojaLargura/2, lojaY + 30);
+          
+          fill(200, 50, 50);
+          rect(lojaX + lojaLargura - 35, lojaY + 10, 25, 25, 5);
+          fill(255);
+          textSize(18);
+          text("X", lojaX + lojaLargura - 28, lojaY + 25);
+          
+          textSize(16);
+          fill(255, 100, 100);
+          text("1. ❤️ Poção de Cura - ", lojaX + 200, lojaY + 80);
+          fill(200);
+          textSize(14);
+          text("   → Cura 4 pontos de vida", lojaX + 200, lojaY + 100);
+          
+          
+          fill(100, 200, 255);
+          textSize(16);
+          text("2. ⚡ Poção de Velocidade - 5 ouro", lojaX + 200, lojaY + 140);
+          fill(200);
+          textSize(14);
+          text("   → 2 blocos por movimento (4 usos)", lojaX + 200, lojaY + 160);
+          
+          fill(200, 255, 200);
+          textSize(14);
+          text("🎮 Pressione 1 ou 2 para comprar", lojaX + 200, lojaY + 200);
+          text("💰 Seu ouro: " + ouro, lojaX + 200, lojaY + 230);
+        }
+
+        // LIDA COM CLIQUES DO MOUSE
+        function mousePressed() {
+          if (mostrarTelaFim) {
+            // Verificar clique no botão de reiniciar
+            let botaoX = width/2;
+            let botaoY = estatisticasFimJogo.derrotaFreeway ? 520 : 500;
+            let botaoLargura = 200;
+            let botaoAltura = 50;
+            
+            if (mouseX > botaoX - botaoLargura/2 && 
+                mouseX < botaoX + botaoLargura/2 && 
+                mouseY > botaoY - botaoAltura/2 && 
+                mouseY < botaoY + botaoAltura/2) {
+              reiniciarJogoCompleto();
+            }
+            return;
+          }
+          
+          if (emBatalha) return;
+          
+          let botaoX = 10;
+          let botaoY = 10;
+          let botaoLargura = 60;
+          let botaoAltura = 35;
+          
+          if (mouseX > botaoX && mouseX < botaoX + botaoLargura &&
+              mouseY > botaoY && mouseY < botaoY + botaoAltura) {
+            lojaAberta = !lojaAberta;
+            atualizarInterface();
+            return;
+          }
+          
+          if (lojaAberta) {
+            let botaoFecharX = width/2 + 200 - 35;
+            let botaoFecharY = height/2 - 150 + 10;
+            
+            if (mouseX > botaoFecharX && mouseX < botaoFecharX + 25 &&
+                mouseY > botaoFecharY && mouseY < botaoFecharY + 25) {
+              lojaAberta = false;
+              atualizarInterface();
+              return;
+            }
+          }
+        }
+
+        // LIDA COM TECLAS PRESSIONADAS
+        function keyPressed() {
+          // Se estiver na tela de fim, ESPAÇO reinicia
+          if (mostrarTelaFim) {
+            if (keyCode === 32) { // ESPAÇO
+              reiniciarJogoCompleto();
+            }
+            return;
+          }
+          
+          // Tecla 0 para ir direto para fase 5
+          if (key === '0') {
+            irParaFase5();
+            return;
+          }
+          
+          // Se estiver na fase Freeway
+          if (faseAtual >= 5 && freewayAtivo) {
+            lidarInputFreeway();
+            return;
+          }
+          
+          // Se estiver em batalha, usa controles de batalha
+          if (emBatalha) {
+            lidarInputBatalha();
+            return;
+          }
+          
+          if (jogoAcabou) return;
+          
+          // Tecla Q para iniciar batalha com inimigo próximo
+          if (key === 'q' || key === 'Q') {
+            iniciarCombateProximo();
+            return;
+          }
+          
+          // Comprar poções (teclas 1 e 2) - só funciona se a loja estiver aberta
+          if (lojaAberta) {
+            if (key === '1') {
+              comprarPocaoVida();
+            } else if (key === '2') {
+              comprarPocaoVelocidade();
+            }
+          }
+          
+          // Movimento do jogador
+          let movimentos = 1;
+          if (pocoVelocidadeAtiva) {
+            movimentos = 2;
+            movimentosVelocidade--;
+            if (movimentosVelocidade <= 0) {
+              pocoVelocidadeAtiva = false;
+            }
+          }
+          
+          let moveu = false;
+          switch(key) {
+            case 'w':
+            case 'W':
+              for (let i = 0; i < movimentos; i++) {
+                if (jogador.mover(0, -1)) moveu = true;
+              }
+              if (moveu) {
+                turnoInimigos();
+                verificarColisaoInimigo();
+              }
+              break;
+            case 's':
+            case 'S':
+              for (let i = 0; i < movimentos; i++) {
+                if (jogador.mover(0, 1)) moveu = true;
+              }
+              if (moveu) {
+                turnoInimigos();
+                verificarColisaoInimigo();
+              }
+              break;
+            case 'a':
+            case 'A':
+              for (let i = 0; i < movimentos; i++) {
+                if (jogador.mover(-1, 0)) moveu = true;
+              }
+              if (moveu) {
+                turnoInimigos();
+                verificarColisaoInimigo();
+              }
+              break;
+            case 'd':
+            case 'D':
+              for (let i = 0; i < movimentos; i++) {
+                if (jogador.mover(1, 0)) moveu = true;
+              }
+              if (moveu) {
+                turnoInimigos();
+                verificarColisaoInimigo();
+              }
+              break;
+          }
+          
+          // Coletar itens
+          verificarColetaItens();
+        }
+
+        // REINICIA TODO O JOGO
+        function reiniciarJogoCompleto() {
+          faseAtual = 1;
+          ouro = 0;
+          jogoAcabou = false;
+          mostrarTelaFim = false;
+          emBatalha = false;
+          lojaAberta = false;
+          freewayAtivo = false;
+          
+          // Reinicializar tudo
+          gerarMapa();
+          jogador = new Entidade(1, 1, "🐮", color(100, 200, 100), "Vaca ");
+          gerarInimigos();
+          gerarItens();
+          estrelasFimJogo = [];
+          
+          // Reinicializar Freeway com 6 linhas
+          inicializarFreeway();
+          
+          // Atualizar interface
+          atualizarInterface();
+        }
+
+        // NOVA FUNÇÃO: IR DIRETO PARA FASE 5
+        function irParaFase5() {
+          faseAtual = 5;
+          freewayAtivo = true;
+          emBatalha = false;
+          jogoAcabou = false;
+          lojaAberta = false;
+          inimigoAtual = null;
+          
+          // Reinicializar o Freeway
+          carrosFreeway = [];
+          atorFreeway = new AtorFreeway();
+          chegadasFreeway = [];
+          tempoFreeway = 0;
+          vidasFreeway = 3;
+          pontosFreeway = 0;
+          
+          // Criar carros em 6 linhas diferentes
+          let linhas = [80, 160, 240, 320, 400, 480]; // 6 linhas
+          let velocidades = [0, 0, 0, 0, 0, 0]; // Velocidades variadas
+          
+          // Criar 2-3 carros por linha
+          for (let linha of linhas) {
+            let numCarrosNaLinha = floor(random(2, 4));
+            for (let i = 0; i < numCarrosNaLinha; i++) {
+              let velocidade = random(velocidades);
+              let x = random(width);
+              let tipo = floor(random(3));
+              carrosFreeway.push(new CarroFreeway(x, linha, velocidade, tipo));
+            }
+          }
+          
+          // Criar área de chegada no topo
+          for (let i = 0; i < 5; i++) {
+            chegadasFreeway.push({
+              x: i * 160,
+              y: 0,
+              largura: 160,
+              altura: 50,
+              ocupada: false
+            });
+          }
+          
+          atualizarInterface();
+        }
+
+        // LIDA COM INPUTS NO FREEWAY
+        function lidarInputFreeway() {
+          switch(key) {
+            case 'w':
+            case 'W':
+              atorFreeway.mover(0, -1);
+              break;
+            case 's':
+            case 'S':
+              atorFreeway.mover(0, 1);
+              break;
+            case 'a':
+            case 'A':
+              atorFreeway.mover(-1, 0);
+              break;
+            case 'd':
+            case 'D':
+              atorFreeway.mover(1, 0);
+              break;
+          }
+        }
+
+        // INICIA COMBATE COM INIMIGO PRÓXIMO
+        function iniciarCombateProximo() {
+          let inimigosProximos = getInimigosProximos();
+          
+          if (inimigosProximos.length > 0) {
+            let inimigoMaisProximo = inimigosProximos[0];
+            let menorDistancia = abs(inimigoMaisProximo.x - jogador.x) + abs(inimigoMaisProximo.y - jogador.y);
+            
+            for (let inimigo of inimigosProximos) {
+              let distancia = abs(inimigo.x - jogador.x) + abs(inimigo.y - jogador.y);
+              if (distancia < menorDistancia) {
+                inimigoMaisProximo = inimigo;
+                menorDistancia = distancia;
+              }
+            }
+            
+            iniciarBatalha(inimigoMaisProximo);
+          }
+        }
+
+        // LIDA COM INPUTS DURANTE A BATALHA
+        function lidarInputBatalha() {
+          switch(keyCode) {
+            case UP_ARROW:
+              opcaoSelecionada = (opcaoSelecionada - 1 + opcoesBatalha.length) % opcoesBatalha.length;
+              break;
+            case DOWN_ARROW:
+              opcaoSelecionada = (opcaoSelecionada + 1) % opcoesBatalha.length;
+              break;
+            case ENTER:
+            case 32: // Space
+              executarAcaoBatalha();
+              break;
+          }
+        }
+
+        // EXECUTA A AÇÃO SELECIONADA NA BATALHA
+        function executarAcaoBatalha() {
+          logBatalha = [];
+          
+          switch(opcaoSelecionada) {
+            case 0: // Atacar
+              let dano = max(1, jogador.ataque - inimigoAtual.defesa);
+              inimigoAtual.vida -= dano;
+              logBatalha.push(`⚔️ ${jogador.nome} ataca! Causa ${dano} de dano.`);
+              break;
+              
+            case 1: // Habilidade 1
+            case 2: // Habilidade 2
+            case 3: // Habilidade 3
+              let indiceAtaque = opcaoSelecionada;
+              let ataque = ataquesJogador[indiceAtaque - 1];
+              
+              if (ouro >= ataque.custo) {
+                ouro -= ataque.custo;
+                let dano = max(1, ataque.dano - inimigoAtual.defesa);
+                inimigoAtual.vida -= dano;
+                logBatalha.push(`💫 ${jogador.nome} usa ${ataque.nome}! Causa ${dano} de dano.`);
+                logBatalha.push(`💰 Custo: ${ataque.custo} de ouro.`);
+              } else {
+                logBatalha.push("❌ Ouro insuficiente para esta habilidade!");
+                vezJogador = true;
+                return;
+              }
+              break;
+          }
+          
+          // Verificar se inimigo morreu
+          if (inimigoAtual.vida <= 0) {
+            logBatalha.push(`💀 ${inimigoAtual.nome} foi derrotado!`);
+            logBatalha.push(`💰 +30 de ouro!`);
+            ouro += 30;
+            
+            // Remover inimigo do mapa
+            inimigos = inimigos.filter(inimigo => inimigo !== inimigoAtual);
+            emBatalha = false;
+            atualizarInterface();
+            return;
+          }
+          
+          // Turno do inimigo
+          vezJogador = false;
+          setTimeout(turnoInimigoBatalha, 1000);
+        }
+
+        // TURNO DO INIMIGO NA BATALHA
+        function turnoInimigoBatalha() {
+          let ataqueInimigo = inimigoAtual.ataqueAleatorio();
+          let danoInimigo = max(1, ataqueInimigo.dano - jogador.defesa);
+          jogador.vida -= danoInimigo;
+          
+          logBatalha.push(`⚔️ ${inimigoAtual.nome} usa ${ataqueInimigo.nome}!`);
+          logBatalha.push(`💥 ${ataqueInimigo.descricao} Causa ${danoInimigo} de dano.`);
+          
+          // Verificar se jogador morreu
+          if (jogador.vida <= 0) {
+            jogoAcabou = true;
+            atualizarInterface();
+            return;
+          }
+          
+          vezJogador = true;
+        }
+
+        // VERIFICA COLISÃO COM INIMIGOS
+        function verificarColisaoInimigo() {
+          for (let inimigo of inimigos) {
+            if (jogador.x === inimigo.x && jogador.y === inimigo.y) {
+              iniciarBatalha(inimigo);
+              return;
+            }
+          }
+        }
+
+        // INICIA UMA BATALHA
+        function iniciarBatalha(inimigo) {
+          emBatalha = true;
+          inimigoAtual = inimigo;
+          vezJogador = true;
+          opcaoSelecionada = 0;
+          logBatalha = [`⚔️ Batalha contra ${inimigo.nome}!`];
+          logBatalha.push(`⚠️ Cuidado! Este inimigo tem ${ataquesInimigos.length} ataques diferentes!`);
+          atualizarInterface();
+        }
+
+        // TURNO DOS INIMIGOS (MOVIMENTO ALEATÓRIO)
+        function turnoInimigos() {
+          inimigos.forEach(inimigo => {
+            let direcoes = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+            let dir = random(direcoes);
+            
+            let moveu = inimigo.mover(dir[0], dir[1]);
+            
+            if (!moveu) {
+              direcoes = embaralharArray(direcoes);
+              for (let i = 0; i < direcoes.length; i++) {
+                if (inimigo.mover(direcoes[i][0], direcoes[i][1])) {
+                  break;
+                }
+              }
+            }
+          });
+        }
+
+        // EMBARALHA UM ARRAY
+        function embaralharArray(array) {
+          let novoArray = [...array];
+          for (let i = novoArray.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [novoArray[i], novoArray[j]] = [novoArray[j], novoArray[i]];
+          }
+          return novoArray;
+        }
+
+        // VERIFICA COLISÃO COM ITENS
+        function verificarColetaItens() {
+          itens.forEach(item => {
+            if (!item.coletado && jogador.x === item.x && jogador.y === item.y) {
+              item.coletado = true;
+              ouro += 5;
+              atualizarInterface();
+            }
+          });
+        }
+
+        // COMPRA POÇÃO DE CURA
+        function comprarPocaoVida() {
+          if (ouro >= 8) {
+            ouro -= custo;
+            jogador.vida = min(jogador.vida + 4, jogador.vidaMax);
+            atualizarInterface();
+          }
+        }
+
+        // COMPRA POÇÃO DE VELOCIDADE
+        function comprarPocaoVelocidade() {
+          if (ouro >= 5) {
+            ouro -= 5;
+            pocoVelocidadeAtiva = true;
+            movimentosVelocidade = 10;
+            atualizarInterface();
+          }
+        }
+
+        // AVANÇA PARA O PRÓXIMO NÍVEL
+        function proximaFase() {
+          faseAtual++;
+          
+          // Se chegou na fase 5, ativa o Freeway
+          if (faseAtual === 5) {
+            freewayAtivo = true;
+            atualizarInterface();
+            return;
+          }
+          
+          // Se não for fase 5, continua jogo normal
+          gerarMapa();
+          gerarInimigos();
+          gerarItens();
+          ouro += 10;
+          atualizarInterface();
+        }
+
+        // VERIFICA CONDIÇÃO DE FIM DE JOGO
+        function fimDeJogo() {
+          if (jogador && jogador.vida <= 0) {
+            jogoAcabou = true;
+            atualizarInterface();
+          }
+        }
+        
+        // FUNÇÃO ADICIONAL DO CÓDIGO ORIGINAL
+        function inflamação() {
+          if (key ==="h" | key === "H");{
+            if (key === "1");{
+                custo +=  float(random(1,2,3,4));
+              }
+          }
+        }
+    </script>
+</body>
+</html>
